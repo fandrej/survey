@@ -1,0 +1,150 @@
+# Hand made install
+
+# Caution:
+Test server IP-address: 192.168.1.208, replace to own.
+Also replace all paths with yours.
+
+#
+# Install Django & DRF
+#
+
+mkdir /var/www/django
+cd /var/www/django
+sudo apt-get install -y python3-venv
+python3 -m venv env
+
+# important:
+source env/bin/activate
+
+pip install django
+pip install django-filter
+pip install djangorestframework
+# output:
+> Successfully installed django-2.2.12 pytz-2020.1 sqlparse-0.3.1
+> Successfully installed djangorestframework-3.11.0
+
+
+#
+# create project
+#
+django-admin startproject survey
+cd survey
+
+# create file survey/views.py
+# put in:
+from rest_framework.views import APIView
+from rest_framework.response import Response
+
+class Test(APIView):
+    def get(self, request):
+        return Response('HELLO WORLD!')
+# save
+
+# in survey/urls.py:
+# add:
+from . import views
+# and to urlpatterns add:
+path('hello_world', views.Test.as_view()),
+
+# in survey/settings.py edit:
+ALLOWED_HOSTS = ['*']
+# to INSTALLED_APPS add:
+'rest_framework',
+# save
+
+
+#
+# run & test:
+#
+# in command prompt:
+python manage.py runserver --insecure 192.168.1.208:8000
+# in browser go to:
+http://192.168.1.208:8000/hello_world
+# all ok, CTRL+C
+
+# initial migration:
+python manage.py migrate
+
+# initial user:
+python manage.py createsuperuser --email mail@test.net --username admin # Password: 111
+(Bypass password validation and create user anyway? - y)
+
+# Turn "on" DRF authentification system:
+# in survey/settings.py add:
+REST_FRAMEWORK = {
+    'DEFAULT_AUTHENTICATION_CLASSES': [
+        'rest_framework.authentication.BasicAuthentication',
+        'rest_framework.authentication.SessionAuthentication',
+    ]
+}
+# save
+
+
+#
+# Install documenation API (2 pieces):
+#
+# 1:
+pip install coreapi
+# edit MAIN urls.py file (survey/urls.py)
+# add:
+from rest_framework.documentation import include_docs_urls
+# and:
+urlpatterns = [
+    ...
+    path('docs/', include_docs_urls(title='Polls API')),
+]
+
+# 2:
+pip install django-rest-swagger
+# edit survey/urls.py
+# add:
+from rest_framework_swagger.views import get_swagger_view
+# and:
+urlpatterns = [
+    ...
+    path('sdocs/', schema_view),
+]
+
+# edit survey/settings.py
+INSTALLED_APPS = [
+    ...
+    'rest_framework_swagger',
+]
+
+REST_FRAMEWORK = {
+    ...
+    'DEFAULT_SCHEMA_CLASS': 'rest_framework.schemas.coreapi.AutoSchema'
+}
+
+
+#
+# Create application:
+#
+django-admin startapp poll
+
+# owervrite all files in folder poll with files from https://github.com/fandrej/survey/tree/master/poll
+# in file survey/settings.py edit INSTALLED_APPS:
+INSTALLED_APPS = [
+    ...
+    'poll',
+]
+
+
+# Run:
+python manage.py runserver --insecure 192.168.1.208:8000
+# and go:
+http://192.168.1.208:8000/poll/
+
+#
+#Documentation:
+#
+http://192.168.1.208:8000/docs/
+http://192.168.1.208:8000/poll/sdocs/
+# and see comments in file: poll/urls.py
+
+
+# OR:
+1 Install virtual environment, django, django rest framework
+2 Clone project from Github
+3 Activate environment
+4 Try to start server & go to url.
